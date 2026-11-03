@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#112c49">
+  <title>AERO301 · Aircraft Performance</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="calculations.js" defer></script>
+  <script src="plots.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true">A</span><span>AERO<span class="brand-light">301</span></span></a>
+    <span class="topbar-label">AIRCRAFT PERFORMANCE LAB</span>
+    <span class="version">Development v0.1 · PRD 3.0</span>
+  </header>
+  <div class="page">
+    <section class="intro">
+      <div><p class="eyebrow">STEADY FLIGHT · PARAMETRIC EXPLORATION</p><h1>From inputs to flight performance.</h1><p class="intro-copy">Explore the supplied aircraft model, inspect its limits, and keep every calculation traceable.</p></div>
+      <div class="local-badge"><span aria-hidden="true">●</span> Runs entirely in your browser</div>
+    </section>
+    <main class="workspace">
+      <aside class="input-panel">
+        <div class="panel-title"><span class="step-number">01</span><div><h2>Define your aircraft</h2><p>Enter values in the units shown.</p></div></div>
+        <div class="presets" aria-label="Teaching case presets">
+          <button type="button" class="preset" data-preset="V01"><strong>V01</strong><span>Propeller</span></button>
+          <button type="button" class="preset" data-preset="V02"><strong>V02</strong><span>Illustrative jet</span></button>
+        </div>
+        <p class="small muted preset-note">Teaching examples from the supplied PRD. These are idealised cases, not verified manufacturer data.</p>
+        <form id="aircraft-form" novalidate>
+          <div class="field"><label for="caseId">Case name</label><input id="caseId" name="caseId" maxlength="80" value="V01"></div>
+          <div class="field"><label for="mode">Propulsion mode</label><select id="mode" name="mode"><option value="propeller">Propeller · constant useful power</option><option value="jet">Jet · constant thrust</option></select></div>
+          <fieldset><legend>Geometry and weight</legend>
+            <div class="field"><label for="S">Wing area <span>m²</span></label><input id="S" name="S" inputmode="decimal" type="number" step="any" min="0.1" max="500"><small>Accepted: 0.1–500 m²</small></div>
+            <div class="field"><label for="weightMode">Weight entry</label><select id="weightMode" name="weightMode"><option value="weight">Weight in newtons</option><option value="mass">Mass in kilograms</option></select></div>
+            <div class="field" id="weight-field"><label for="W">Aircraft weight <span>N</span></label><input id="W" name="W" inputmode="decimal" type="number" step="any"><small>10–2,000,000 N</small></div>
+            <div class="field" id="mass-field" hidden><label for="m">Aircraft mass <span>kg</span></label><input id="m" name="m" inputmode="decimal" type="number" step="any"><small>Converted once using g = 9.80665 m/s²</small></div>
+            <div class="field"><label for="geometryMode">Aspect ratio entry</label><select id="geometryMode" name="geometryMode"><option value="ar">Enter aspect ratio</option><option value="span">Calculate from span and area</option></select></div>
+            <div class="field" id="ar-field"><label for="AR">Aspect ratio <span>AR</span></label><input id="AR" name="AR" inputmode="decimal" type="number" step="any"><small>Accepted: 2–30</small></div>
+            <div class="field" id="span-field" hidden><label for="b">Wing span <span>m</span></label><input id="b" name="b" inputmode="decimal" type="number" step="any"><small>AR = b²/S; the same AR limits apply.</small></div>
+          </fieldset>
+          <fieldset><legend>Aerodynamics</legend>
+            <div class="field-grid">
+              <div class="field"><label for="e">Oswald factor <span>e</span></label><input id="e" name="e" inputmode="decimal" type="number" step="any"><small>0.3–1.0</small></div>
+              <div class="field"><label for="CD0">Zero-lift drag <span>C<sub>D0</sub></span></label><input id="CD0" name="CD0" inputmode="decimal" type="number" step="any"><small>0.005–0.15</small></div>
+            </div>
+            <div class="field"><label for="CLmax">Maximum lift coefficient <span>C<sub>Lmax</sub></span></label><input id="CLmax" name="CLmax" inputmode="decimal" type="number" step="any"><small>0.5–3.0</small></div>
+          </fieldset>
+          <fieldset><legend>Atmosphere and propulsion</legend>
+            <div class="field"><label for="h">Geopotential altitude <span>m</span></label><input id="h" name="h" inputmode="decimal" type="number" step="any"><small>1976 standard atmosphere · 0–11,000 m</small></div>
+            <div class="field"><label for="supplyMode">Supply interpretation</label><select id="supplyMode" name="supplyMode"><option value="altitude">Available at selected altitude</option><option value="piston">Propeller: sea-level power with density lapse</option></select></div>
+            <div class="field" id="power-field"><label for="power">Useful available power <span>kW</span></label><input id="power" name="power" inputmode="decimal" type="number" step="any"><small>0–20,000 kW · not shaft power</small></div>
+            <div class="field" id="thrust-field" hidden><label for="thrust">Available thrust <span>N</span></label><input id="thrust" name="thrust" inputmode="decimal" type="number" step="any"><small>0–500,000 N</small></div>
+          </fieldset>
+          <fieldset><legend>Speeds</legend>
+            <div class="field-grid">
+              <div class="field"><label for="Vlo">Plot minimum <span>m/s</span></label><input id="Vlo" name="Vlo" inputmode="decimal" type="number" step="any"></div>
+              <div class="field"><label for="Vhi">Plot maximum <span>m/s</span></label><input id="Vhi" name="Vhi" inputmode="decimal" type="number" step="any"></div>
+            </div>
+            <p class="small muted">Plot endpoints: 1–250 m/s. The solver searches the full supported interval independently.</p>
+            <div class="field"><label for="Vop">Operating true airspeed <span>m/s</span></label><input id="Vop" name="Vop" inputmode="decimal" type="number" step="any"><small>1 m/s to the altitude-dependent Mach 0.30 limit</small></div>
+          </fieldset>
+          <div class="form-actions"><button class="button primary" type="submit" id="calculate">Calculate performance <span aria-hidden="true">↗</span></button><button type="button" class="button secondary" id="reset">Reset current mode</button></div>
+        </form>
+      </aside>
+      <section class="result-panel" aria-label="Performance results">
+        <div class="first-run"><span class="step-number">02</span><div><strong>Your first check</strong><p>Load V01, calculate, and inspect the operating point at 40 m/s. Expected required thrust: <strong>937.79 N</strong>; required power: <strong>37.512 kW</strong>.</p></div><button class="text-button" id="first-check" type="button">Load V01</button></div>
+        <div id="messages" aria-live="polite"></div>
+        <div class="run-bar"><div><span id="run-label">No run yet</span><span id="run-status" class="status">Ready</span></div><div class="export-actions"><button id="export-json" class="button small-button secondary" disabled>Inputs + results JSON</button><button id="export-csv" class="button small-button secondary" disabled>Results + curves CSV</button></div></div>
+        <nav class="tabs" aria-label="Result views" role="tablist">
+          <button type="button" id="tab-overview" role="tab" aria-selected="true" aria-controls="panel-overview" data-tab="overview" class="active">Overview</button>
+          <button type="button" id="tab-curves" role="tab" aria-selected="false" aria-controls="panel-curves" data-tab="curves">Performance plots</button>
+          <button type="button" id="tab-studies" role="tab" aria-selected="false" aria-controls="panel-studies" data-tab="studies">Three studies</button>
+          <button type="button" id="tab-model" role="tab" aria-selected="false" aria-controls="panel-model" data-tab="model">Model and checks</button>
+        </nav>
+        <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" class="tab-panel">
+          <div id="overview"></div>
+          <section class="surface"><div class="section-heading"><div><p class="eyebrow">SELECTED OPERATING POINT</p><h2 id="operating-title">Inspect one speed</h2></div><span id="operating-tag" class="tag"></span></div><div id="operating"></div></section>
+          <section class="surface"><div class="section-heading"><div><p class="eyebrow">CURRENT SESSION</p><h2>Saved runs</h2></div><span class="small muted">Stored in browser memory until this page closes</span></div><div id="history"></div></section>
+        </div>
+        <div id="panel-curves" role="tabpanel" aria-labelledby="tab-curves" class="tab-panel" hidden>
+          <div class="section-heading plot-toolbar"><div><p class="eyebrow">SIX PERFORMANCE VIEWS</p><h2>Inspect the curves</h2></div><button class="button secondary small-button" id="export-svg" disabled>Download this plot · SVG</button></div>
+          <div class="plot-tabs" aria-label="Plot selection">
+            <button type="button" data-plot="thrust" class="active">Thrust</button><button type="button" data-plot="power">Power</button><button type="button" data-plot="excessThrust">Excess thrust</button><button type="button" data-plot="excessPower">Excess power</button><button type="button" data-plot="climb">Estimated climb</button><button type="button" data-plot="deficit">Power deficit</button>
+          </div>
+          <div id="plot-container" class="surface plot-surface"></div>
+          <p class="plot-help">Shading identifies speeds below level-flight stall or above Mach 0.30. Dashed extensions are mathematical values. Curve intersections and extrema use the full supported calculation interval.</p>
+          <div id="plot-markers" class="surface"></div>
+        </div>
+        <div id="panel-studies" role="tabpanel" aria-labelledby="tab-studies" class="tab-panel" hidden>
+          <section class="surface">
+            <p class="eyebrow">CONTROL ONE PARAMETER AT A TIME</p><h2>Build three reproducible studies</h2>
+            <p>Select exactly three approved categories. Capture the current calculated case as a baseline, then enter at least three distinct values for each. These are app runs; you write the engineering interpretation.</p>
+            <div class="study-options">
+              <label><input type="checkbox" name="study-kind" value="weight" checked> Aircraft weight</label>
+              <label><input type="checkbox" name="study-kind" value="ar" checked> Aspect ratio</label>
+              <label><input type="checkbox" name="study-kind" value="supply" checked> Available propulsion</label>
+              <label><input type="checkbox" name="study-kind" value="altitude"> Altitude</label>
+              <label><input type="checkbox" name="study-kind" value="wingLoading"> Wing loading</label>
+              <label><input type="checkbox" name="study-kind" value="cd0"> Zero-lift drag</label>
+            </div>
+            <div class="study-baseline"><button type="button" class="button secondary" id="capture-baseline">Use current run as baseline</button><span id="baseline-label" class="small muted">No baseline captured</span></div>
+            <div id="study-inputs"></div>
+            <div class="inline-actions"><button type="button" class="button primary" id="run-studies">Run selected studies</button><button type="button" class="button secondary" id="export-studies-json" disabled>Study runs JSON</button><button type="button" class="button secondary" id="export-studies-csv" disabled>Study results CSV</button></div>
+            <div id="study-messages" aria-live="polite"></div>
+          </section>
+          <div id="study-results"></div>
+        </div>
+        <div id="panel-model" role="tabpanel" aria-labelledby="tab-model" class="tab-panel" hidden>
+          <section class="surface"><p class="eyebrow">SUPPLIED ENGINEERING MODEL</p><h2>Assumptions and calculation sequence</h2>
+            <p>This development build implements Parts A and B of the supplied Theory and PRD, version 3.0. Its software checks do not replace the team's independent validation or review.</p>
+            <div class="model-facts"><div><strong>Atmosphere</strong><span>1976 standard atmosphere · geopotential altitude 0–11,000 m</span></div><div><strong>Speed domain</strong><span>True airspeed · level-flight stall to Mach 0.30</span></div><div><strong>Propulsion</strong><span>Useful power or thrust at the selected altitude; optional named piston lapse</span></div><div><strong>Performance</strong><span>Approximate climb from level-flight drag; separate steady-glide force balance</span></div></div>
+            <details><summary>Equations from Part A</summary><div class="equation-list">
+              <p><b>(1) Atmosphere:</b> T = T₀ + ah; p = p₀(T/T₀)<sup>−g₀/(aR)</sup>; ρ = p/(RT); σ = ρ/ρ₀.</p>
+              <p><b>(2) Sound speed and weight:</b> c = √(γRT); M = V/c; Vcap = 0.30c; W = mg₀.</p>
+              <p><b>(3)–(5) Aerodynamics:</b> q = ½ρV²; C<sub>L</sub> = W/(qS); K = 1/(πeAR); C<sub>D</sub> = C<sub>D0</sub> + KC<sub>L</sub>²; T<sub>R</sub> = D = qSC<sub>D</sub>; P<sub>R</sub> = DV.</p>
+              <p><b>(6)–(9) Propulsion and climb:</b> propeller T<sub>A</sub> = P<sub>A</sub>/V; jet P<sub>A</sub> = T<sub>A</sub>V; ΔP = P<sub>A</sub> − P<sub>R</sub>; ΔT = T<sub>A</sub> − T<sub>R</sub>; deficit = max(P<sub>R</sub> − P<sub>A</sub>, 0); RC estimate = ΔP/W.</p>
+              <p><b>(10)–(14) Stall and minima:</b> V<sub>s</sub> = √(2W/(ρSC<sub>Lmax</sub>)); A = ½ρSC<sub>D0</sub>; B = 2KW²/(ρS); V<sub>minT</sub> = (B/A)<sup>¼</sup>; V<sub>minP</sub> = (B/(3A))<sup>¼</sup>. Constrain each candidate to the supported speed interval before evaluation.</p>
+              <p><b>(15)–(19) Optima and intersections:</b> C<sub>L,opt</sub> = √(C<sub>D0</sub>/K); unrestricted (L/D)<sub>max</sub> = 1/(2√(KC<sub>D0</sub>)). Solve F(V) = P<sub>A</sub>(V) − P<sub>R</sub>(V) = 0. Propeller maximum ΔP occurs at minimum P<sub>R</sub>; jet candidate V = √((T<sub>A</sub> + √(T<sub>A</sub>² + 12AB))/(6A)).</p>
+              <p><b>(20)–(22) Exact steady glide within this model:</b> θ<sub>g</sub> = atan(C<sub>D</sub>/C<sub>L</sub>); V<sub>g</sub> = √(2W cos θ<sub>g</sub>/(ρSC<sub>L</sub>)); sink = V<sub>g</sub> sin θ<sub>g</sub>; horizontal speed = V<sub>g</sub> cos θ<sub>g</sub>. Optimise over the glide coefficient domain, independently of the level-flight stall cutoff.</p>
+            </div></details>
+            <p class="small muted">g₀ = 9.80665 m/s²; R = 287.05287 J/(kg·K); T₀ = 288.15 K; p₀ = 101325 Pa; a = −0.0065 K/m; γ = 1.4. No extra propeller efficiency is applied to useful power. Coefficients and configuration stay fixed within a run.</p>
+          </section>
+          <section class="surface"><div class="section-heading"><div><p class="eyebrow">IMPLEMENTATION CHECK</p><h2>Compare the two supplied presets</h2></div><button type="button" class="button secondary" id="reference-check">Run reference comparison</button></div><p>Compare computed values with the numerical targets in Part C. The pass rule is the supplied absolute allowance plus 0.1% of the reference magnitude. This does not complete the required five representative cases and five boundary cases.</p><div id="reference-results"></div></section>
+          <section class="surface"><h2>Numerical details for this run</h2><div id="solver-details"></div></section>
+        </div>
+      </section>
+    </main>
+    <footer><span>AERO301 · Aircraft Performance and Parametric Analysis</span><span>Development build · Save exports before closing the page.</span></footer>
+  </div>
+</body>
+</html>
