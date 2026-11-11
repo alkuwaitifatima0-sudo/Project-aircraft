@@ -65,3 +65,33 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* Cleaner overview */
+#overview .metric-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+#overview .metric {
+  padding: 14px 16px;
+}
+
+#overview .metric-label {
+  font-size: 11px;
+}
+
+#overview .metric-value {
+  font-size: 24px;
+}
+
+#overview .metric-value + * {
+  font-size: 11px;
+}
+
+/* Make technical sections quieter */
+#overview .surface {
+  margin-top: 14px;
+}
+
+#overview .table-scroll {
+  font-size: 12px;
+}
