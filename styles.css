@@ -95,3 +95,10 @@
 #overview .table-scroll {
   font-size: 12px;
 }
+/* Wider, easier-to-use input panel */
+@media (min-width: 1151px) {
+  .workspace {
+    grid-template-columns: 350px minmax(0, 1fr);
+    gap: 22px;
+  }
+}
