@@ -102,3 +102,14 @@
     gap: 22px;
   }
 }
+/* Simple overview: show only key results */
+#overview .metric-grid > .metric:nth-child(2),
+#overview .metric-grid > .metric:nth-child(3),
+#overview .metric-grid > .metric:nth-child(5) {
+  display: none;
+}
+
+/* Three key results in one clean row */
+#overview .metric-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
